@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Virtual Avatar Widget - Responsive Embed">
+  <title>Anam AI Virtual Avatar</title>
+  
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@600;800&display=swap');
+
+    :root {
+      --bg-gradient: radial-gradient(circle at center, #111019 0%, #050508 100%);
+      --accent-color: #8b5cf6;
+      --accent-glow: rgba(139, 92, 246, 0.15);
+      --container-border: rgba(255, 255, 255, 0.08);
+      --shadow-color: rgba(0, 0, 0, 0.6);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: var(--bg-gradient);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      position: relative;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    /* Ambient background glow for a premium feel */
+    body::before {
+      content: "";
+      position: absolute;
+      width: 50vw;
+      height: 50vw;
+      max-width: 600px;
+      max-height: 600px;
+      background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+      filter: blur(80px);
+      z-index: 0;
+      pointer-events: none;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    /* Responsive container with aspect ratio control */
+    .widget-container {
+      position: relative;
+      z-index: 1;
+      width: 90vw;
+      max-width: min(800px, calc(85vh * 4 / 3)); /* responsive constraint for both width and height */
+      aspect-ratio: 4 / 3;
+      background-color: #000;
+      border: 1px solid var(--container-border);
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 
+        0 25px 50px -12px var(--shadow-color),
+        0 0 40px rgba(139, 92, 246, 0.05);
+      transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .widget-container:hover {
+      border-color: rgba(139, 92, 246, 0.3);
+      box-shadow: 
+        0 30px 60px -12px var(--shadow-color),
+        0 0 50px rgba(139, 92, 246, 0.1);
+    }
+
+    anam-agent {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    /* Custom scrollbars inside shadow DOM if applicable */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.2);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: var(--accent-color);
+      border-radius: 3px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Responsive Widget Container -->
+  <main class="widget-container">
+    <anam-agent agent-id="4c2e9235-c739-42bf-9c87-97a77dcfb07a" layout="inline"></anam-agent>
+  </main>
+
+  <!-- Script to programmatically remove the Anam watermark from the Shadow DOM -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const agent = document.querySelector('anam-agent');
+      if (!agent) return;
+
+      const purgeWatermark = () => {
+        if (!agent.shadowRoot) return;
+        const allElements = agent.shadowRoot.querySelectorAll('*');
+        allElements.forEach(el => {
+          // Hide text element that says exactly "Anam"
+          if (el.childNodes.length === 1 && el.textContent.trim().toLowerCase() === 'anam') {
+            el.style.setProperty('display', 'none', 'important');
+          }
+          // Hide elements with watermark/branding in class names or ids
+          const classStr = String(el.className || '').toLowerCase();
+          const idStr = String(el.id || '').toLowerCase();
+          if (classStr.includes('watermark') || classStr.includes('branding') || idStr.includes('watermark') || idStr.includes('branding')) {
+            el.style.setProperty('display', 'none', 'important');
+          }
+        });
+      };
+
+      // Periodic check to handle dynamic re-renders inside the Web Component
+      setInterval(purgeWatermark, 250);
+
+      // Instantly run on session start and clicks
+      agent.addEventListener('anam-agent:session-started', purgeWatermark);
+      agent.addEventListener('click', purgeWatermark);
+    });
+  </script>
+
+  <!-- Anam AI Script (Loaded Async) -->
+  <script src="https://unpkg.com/@anam-ai/agent-widget" async></script>
+</body>
+</html>
