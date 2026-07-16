@@ -71,7 +71,20 @@
       z-index: 2;
     }
 
-
+    /* Background video styles */
+    .bg-video {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      object-fit: cover;
+      opacity: 0.6;
+      pointer-events: none;
+      transform: scale(1.05);
+      z-index: 1;
+      filter: brightness(0.4) saturate(0.8);
+    }
 
     /* Main display workspace centered on screen */
     .main-content {
@@ -115,7 +128,10 @@
 <body>
 
   <div class="app-wrapper">
-
+    <!-- Zoom Tunnel Background Video (LumenLoops Asset) -->
+    <video autoplay loop muted playsinline class="bg-video" id="bg-video">
+      <source src="assets/Videos/mp4/indigo/tunnel.mp4" type="video/mp4">
+    </video>
 
     <!-- Main Centered Content Grid -->
     <main class="main-content">
