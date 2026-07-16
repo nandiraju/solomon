@@ -51,20 +51,12 @@
       transform: translate(-50%, -50%);
     }
 
-    /* Layout wrapper */
-    .app-layout {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 28px;
-      z-index: 1;
-    }
-
     /* Responsive container with aspect ratio control (16:9 to match the video stream) */
     .widget-container {
       position: relative;
+      z-index: 1;
       width: 90vw;
-      max-width: min(850px, calc(70vh * 16 / 9)); /* caps sizing dynamically based on width and height constraints */
+      max-width: min(850px, calc(85vh * 16 / 9)); /* caps sizing dynamically based on width and height constraints */
       aspect-ratio: 16 / 9;
       background-color: #000;
       border: 1px solid var(--container-border);
@@ -89,61 +81,6 @@
       display: block;
     }
 
-    /* Premium Stop Interaction Icon Button */
-    .stop-btn {
-      width: 60px;
-      height: 60px;
-      display: none; /* Hidden by default */
-      justify-content: center;
-      align-items: center;
-      color: #ffffff;
-      background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 50%;
-      cursor: pointer;
-      box-shadow: 
-        0 10px 25px -5px rgba(239, 68, 68, 0.4),
-        0 0 20px rgba(239, 68, 68, 0.1);
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    /* Show stop button only when session is active */
-    .session-active .stop-btn {
-      display: flex;
-      animation: fade-in-button 0.3s ease-out;
-    }
-
-    @keyframes fade-in-button {
-      from {
-        opacity: 0;
-        transform: translateY(10px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    .stop-btn svg {
-      width: 26px;
-      height: 26px;
-    }
-
-    .stop-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 
-        0 15px 30px -5px rgba(239, 68, 68, 0.5),
-        0 0 30px rgba(239, 68, 68, 0.25);
-      filter: brightness(1.1);
-    }
-
-    .stop-btn:active {
-      transform: translateY(1px);
-      box-shadow: 
-        0 5px 12px -5px rgba(239, 68, 68, 0.4),
-        0 0 15px rgba(239, 68, 68, 0.1);
-    }
-
     /* Custom scrollbars inside shadow DOM if applicable */
     ::-webkit-scrollbar {
       width: 6px;
@@ -159,27 +96,15 @@
 </head>
 <body>
 
-  <div class="app-layout" id="app-layout">
-    <!-- Responsive Widget Container -->
-    <main class="widget-container">
-      <anam-agent agent-id="4c2e9235-c739-42bf-9c87-97a77dcfb07a" layout="inline"></anam-agent>
-    </main>
-
-    <!-- Stop Interaction Trigger Button (Icon Only, shown only during interaction) -->
-    <button type="button" class="stop-btn" id="stop-btn" title="Stop Interaction">
-      <!-- Standard phone hang-up/disconnect icon -->
-      <svg viewBox="0 0 24 24" fill="currentColor">
-        <path d="M12 9c-2.2 0-4.3.4-6.2 1.1-.6.2-1 .7-1 1.3V15c0 .6.5 1.1 1.1 1.1.9 0 1.8-.1 2.6-.4.5-.2.9-.6.9-1.2v-2.2c1.7-.5 3.5-.8 5.6-.8s3.9.3 5.6.8v2.2c0 .6.4 1 1 1.2.8.3 1.7.4 2.6.4.6 0 1.1-.5 1.1-1.1v-3.6c0-.6-.4-1.1-1-1.3-1.9-.7-4-1.1-6.2-1.1z"/>
-      </svg>
-    </button>
-  </div>
+  <!-- Responsive Widget Container (Vertically & Horizontally Centered) -->
+  <main class="widget-container">
+    <anam-agent agent-id="4c2e9235-c739-42bf-9c87-97a77dcfb07a" layout="inline"></anam-agent>
+  </main>
 
   <!-- Script to programmatically remove the Anam watermark from the Shadow DOM -->
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       const agent = document.querySelector('anam-agent');
-      const stopBtn = document.getElementById('stop-btn');
-      const appLayout = document.getElementById('app-layout');
       if (!agent) return;
 
       const purgeWatermark = () => {
@@ -199,47 +124,11 @@
         });
       };
 
-      // Listen for conversation session events to toggle visual state & show/hide stop button
-      agent.addEventListener('anam-agent:session-started', () => {
-        appLayout.classList.add('session-active');
-        purgeWatermark();
-      });
-      
-      agent.addEventListener('anam-agent:session-ended', () => {
-        appLayout.classList.remove('session-active');
-      });
-
-      // Stop interaction logic
-      if (stopBtn) {
-        stopBtn.addEventListener('click', () => {
-          // Visual scale effect
-          stopBtn.style.transform = 'scale(0.95)';
-          setTimeout(() => stopBtn.style.transform = 'scale(1)', 100);
-
-          // 1. Try to pierce Shadow DOM and trigger the built-in End Call click handler
-          if (agent.shadowRoot) {
-            const closeBtn = agent.shadowRoot.querySelector('.anam-close-btn');
-            if (closeBtn) {
-              closeBtn.click();
-              return;
-            }
-          }
-          
-          // 2. Fallback: Force detach and re-attach widget to terminate WebRTC stream
-          const parent = agent.parentNode;
-          const nextSib = agent.nextSibling;
-          parent.removeChild(agent);
-          parent.insertBefore(agent, nextSib);
-
-          // Manually reset class (fallback if WebRTC stream is closed programmatically)
-          appLayout.classList.remove('session-active');
-        });
-      }
-
       // Periodic check to handle dynamic re-renders inside the Web Component
       setInterval(purgeWatermark, 250);
 
-      // Instantly run on clicks
+      // Instantly run on session start and clicks
+      agent.addEventListener('anam-agent:session-started', purgeWatermark);
       agent.addEventListener('click', purgeWatermark);
     });
   </script>
