@@ -51,13 +51,21 @@
       transform: translate(-50%, -50%);
     }
 
-    /* Responsive container with aspect ratio control */
+    /* Layout wrapper */
+    .app-layout {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 24px;
+      z-index: 1;
+    }
+
+    /* Responsive container with aspect ratio control (16:9 to match the video stream) */
     .widget-container {
       position: relative;
-      z-index: 1;
       width: 90vw;
-      max-width: min(800px, calc(85vh * 4 / 3)); /* responsive constraint for both width and height */
-      aspect-ratio: 4 / 3;
+      max-width: min(850px, calc(70vh * 16 / 9)); /* caps sizing dynamically based on width and height constraints */
+      aspect-ratio: 16 / 9;
       background-color: #000;
       border: 1px solid var(--container-border);
       border-radius: 20px;
@@ -81,6 +89,40 @@
       display: block;
     }
 
+    /* Premium Stop Interaction Button */
+    .stop-btn {
+      padding: 16px 40px;
+      font-size: 15px;
+      font-weight: 600;
+      color: #ffffff;
+      background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 50px;
+      cursor: pointer;
+      box-shadow: 
+        0 10px 25px -5px rgba(239, 68, 68, 0.4),
+        0 0 20px rgba(239, 68, 68, 0.1);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      font-family: 'Inter', sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .stop-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 
+        0 15px 30px -5px rgba(239, 68, 68, 0.5),
+        0 0 30px rgba(239, 68, 68, 0.25);
+      filter: brightness(1.1);
+    }
+
+    .stop-btn:active {
+      transform: translateY(1px);
+      box-shadow: 
+        0 5px 12px -5px rgba(239, 68, 68, 0.4),
+        0 0 15px rgba(239, 68, 68, 0.1);
+    }
+
     /* Custom scrollbars inside shadow DOM if applicable */
     ::-webkit-scrollbar {
       width: 6px;
@@ -96,15 +138,23 @@
 </head>
 <body>
 
-  <!-- Responsive Widget Container -->
-  <main class="widget-container">
-    <anam-agent agent-id="4c2e9235-c739-42bf-9c87-97a77dcfb07a" layout="inline"></anam-agent>
-  </main>
+  <div class="app-layout">
+    <!-- Responsive Widget Container -->
+    <main class="widget-container">
+      <anam-agent agent-id="4c2e9235-c739-42bf-9c87-97a77dcfb07a" layout="inline"></anam-agent>
+    </main>
+
+    <!-- Stop Interaction Trigger Button -->
+    <button type="button" class="stop-btn" id="stop-btn">
+      Stop Interaction
+    </button>
+  </div>
 
   <!-- Script to programmatically remove the Anam watermark from the Shadow DOM -->
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       const agent = document.querySelector('anam-agent');
+      const stopBtn = document.getElementById('stop-btn');
       if (!agent) return;
 
       const purgeWatermark = () => {
@@ -123,6 +173,30 @@
           }
         });
       };
+
+      // Stop interaction logic
+      if (stopBtn) {
+        stopBtn.addEventListener('click', () => {
+          // Visual scale effect
+          stopBtn.style.transform = 'scale(0.95)';
+          setTimeout(() => stopBtn.style.transform = 'scale(1)', 100);
+
+          // 1. Try to pierce Shadow DOM and trigger the built-in End Call click handler
+          if (agent.shadowRoot) {
+            const closeBtn = agent.shadowRoot.querySelector('.anam-close-btn');
+            if (closeBtn) {
+              closeBtn.click();
+              return;
+            }
+          }
+          
+          // 2. Fallback: Force detach and re-attach widget to terminate WebRTC stream
+          const parent = agent.parentNode;
+          const nextSib = agent.nextSibling;
+          parent.removeChild(agent);
+          parent.insertBefore(agent, nextSib);
+        });
+      }
 
       // Periodic check to handle dynamic re-renders inside the Web Component
       setInterval(purgeWatermark, 250);
