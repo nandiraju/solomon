@@ -1,12 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Virtual Avatar Widget - Responsive Embed">
   <title>Anam AI Virtual Avatar</title>
-
+  
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Space+Grotesk:wght@500;700&display=swap');
 
@@ -18,7 +17,7 @@
       --bg-glass: rgba(10, 15, 30, 0.4);
       --container-border: rgba(255, 255, 255, 0.08);
       --shadow-color: rgba(0, 0, 0, 0.7);
-
+      
       --accent-color: #10b981; /* emerald */
     }
 
@@ -28,8 +27,7 @@
       padding: 0;
     }
 
-    html,
-    body {
+    html, body {
       height: 100vh;
       width: 100vw;
       overflow: hidden;
@@ -38,9 +36,7 @@
     }
 
     body {
-      background: radial-gradient(circle at 0% 0%, rgba(88, 28, 135, 0.12) 0%, transparent 40%),
-                  radial-gradient(circle at 100% 100%, rgba(29, 78, 216, 0.12) 0%, transparent 45%),
-                  #05060a;
+      background-color: var(--bg-darker);
       font-family: var(--font-sans);
       color: #f3f4f6;
       -webkit-font-smoothing: antialiased;
@@ -101,17 +97,15 @@
     /* Glassmorphic Central Card layout */
     .glass-card-base {
       width: 90vw;
-      max-width: min(850px, calc(80vh * 16 / 9));
-      /* responsive height limit constraint */
+      max-width: min(850px, calc(80vh * 16 / 9)); /* responsive height limit constraint */
       aspect-ratio: 16 / 9;
       background: var(--bg-glass);
       backdrop-filter: blur(24px) saturate(1.4);
       -webkit-backdrop-filter: blur(24px) saturate(1.4);
       border: 1px solid rgba(255, 255, 255, 0.08);
       border-radius: 24px;
-      overflow: visible;
-      /* MUST be visible so the widget's absolute controls/overlays are not clipped */
-      box-shadow:
+      overflow: visible; /* MUST be visible so the widget's absolute controls/overlays are not clipped */
+      box-shadow: 
         0 40px 100px -20px rgba(0, 0, 0, 0.7),
         inset 0 1px 0 rgba(255, 255, 255, 0.1);
     }
@@ -122,7 +116,45 @@
       display: block;
       transform: translateY(-10px);
     }
+
+    /* Glassmorphic Fullscreen Toggle Button */
+    #fullscreen-btn {
+      position: fixed;
+      top: 24px;
+      right: 24px;
+      z-index: 1000;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: rgba(10, 15, 30, 0.4);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #9ca3af;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      transition: all 0.2s ease;
+      outline: none;
+    }
+
+    #fullscreen-btn:hover {
+      border-color: var(--accent-color);
+      color: #fff;
+      background: rgba(10, 15, 30, 0.6);
+      transform: scale(1.05);
+    }
+
+    #fullscreen-btn ion-icon {
+      font-size: 20px;
+    }
   </style>
+
+  <!-- IonIcons v7 CDN -->
+  <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+  <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
 </head>
 
 <body>
@@ -131,6 +163,11 @@
   <video autoplay loop muted playsinline class="bg-video" id="bg-video">
     <source src="assets/Videos/mp4/emerald/tunnel.mp4" type="video/mp4">
   </video>
+
+  <!-- Tiny Fullscreen Mode Toggle Button -->
+  <button id="fullscreen-btn" aria-label="Toggle Fullscreen">
+    <ion-icon name="expand-outline" id="fullscreen-icon"></ion-icon>
+  </button>
 
   <div class="app-wrapper">
 
@@ -143,12 +180,13 @@
     </main>
   </div>
 
-  <!-- Watermark Purger Script -->
+  <!-- Main JavaScript Logic -->
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       const agent = document.querySelector('anam-agent');
       if (!agent) return;
 
+      // Script to programmatically remove the Anam watermark from the Shadow DOM
       const purgeWatermark = () => {
         if (!agent.shadowRoot) return;
         const allElements = agent.shadowRoot.querySelectorAll('*');
@@ -170,11 +208,45 @@
       // Instantly run on session start and clicks
       agent.addEventListener('anam-agent:session-started', purgeWatermark);
       agent.addEventListener('click', purgeWatermark);
+
+      // Fullscreen Toggle Event Handlers
+      const fullscreenBtn = document.getElementById('fullscreen-btn');
+      const fullscreenIcon = document.getElementById('fullscreen-icon');
+
+      if (fullscreenBtn && fullscreenIcon) {
+        fullscreenBtn.addEventListener('click', () => {
+          if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen()
+              .then(() => {
+                fullscreenIcon.setAttribute('name', 'contract-outline');
+              })
+              .catch(err => {
+                console.error(`Error attempting to enable fullscreen mode: ${err.message}`);
+              });
+          } else {
+            document.exitFullscreen()
+              .then(() => {
+                fullscreenIcon.setAttribute('name', 'expand-outline');
+              })
+              .catch(err => {
+                console.error(`Error attempting to exit fullscreen mode: ${err.message}`);
+              });
+          }
+        });
+
+        // Synchronize button icon state when exiting via Escape key
+        document.addEventListener('fullscreenchange', () => {
+          if (document.fullscreenElement) {
+            fullscreenIcon.setAttribute('name', 'contract-outline');
+          } else {
+            fullscreenIcon.setAttribute('name', 'expand-outline');
+          }
+        });
+      }
     });
   </script>
 
   <!-- Anam AI Script (Loaded Async) -->
   <script src="https://unpkg.com/@anam-ai/agent-widget" async></script>
 </body>
-
 </html>
