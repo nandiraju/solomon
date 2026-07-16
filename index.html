@@ -93,7 +93,7 @@
     .stop-btn {
       width: 60px;
       height: 60px;
-      display: flex;
+      display: none; /* Hidden by default */
       justify-content: center;
       align-items: center;
       color: #ffffff;
@@ -105,6 +105,23 @@
         0 10px 25px -5px rgba(239, 68, 68, 0.4),
         0 0 20px rgba(239, 68, 68, 0.1);
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Show stop button only when session is active */
+    .session-active .stop-btn {
+      display: flex;
+      animation: fade-in-button 0.3s ease-out;
+    }
+
+    @keyframes fade-in-button {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
     .stop-btn svg {
@@ -142,13 +159,13 @@
 </head>
 <body>
 
-  <div class="app-layout">
+  <div class="app-layout" id="app-layout">
     <!-- Responsive Widget Container -->
     <main class="widget-container">
       <anam-agent agent-id="4c2e9235-c739-42bf-9c87-97a77dcfb07a" layout="inline"></anam-agent>
     </main>
 
-    <!-- Stop Interaction Trigger Button (Icon Only) -->
+    <!-- Stop Interaction Trigger Button (Icon Only, shown only during interaction) -->
     <button type="button" class="stop-btn" id="stop-btn" title="Stop Interaction">
       <!-- Standard phone hang-up/disconnect icon -->
       <svg viewBox="0 0 24 24" fill="currentColor">
@@ -162,6 +179,7 @@
     document.addEventListener('DOMContentLoaded', () => {
       const agent = document.querySelector('anam-agent');
       const stopBtn = document.getElementById('stop-btn');
+      const appLayout = document.getElementById('app-layout');
       if (!agent) return;
 
       const purgeWatermark = () => {
@@ -180,6 +198,16 @@
           }
         });
       };
+
+      // Listen for conversation session events to toggle visual state & show/hide stop button
+      agent.addEventListener('anam-agent:session-started', () => {
+        appLayout.classList.add('session-active');
+        purgeWatermark();
+      });
+      
+      agent.addEventListener('anam-agent:session-ended', () => {
+        appLayout.classList.remove('session-active');
+      });
 
       // Stop interaction logic
       if (stopBtn) {
@@ -202,14 +230,16 @@
           const nextSib = agent.nextSibling;
           parent.removeChild(agent);
           parent.insertBefore(agent, nextSib);
+
+          // Manually reset class (fallback if WebRTC stream is closed programmatically)
+          appLayout.classList.remove('session-active');
         });
       }
 
       // Periodic check to handle dynamic re-renders inside the Web Component
       setInterval(purgeWatermark, 250);
 
-      // Instantly run on session start and clicks
-      agent.addEventListener('anam-agent:session-started', purgeWatermark);
+      // Instantly run on clicks
       agent.addEventListener('click', purgeWatermark);
     });
   </script>
